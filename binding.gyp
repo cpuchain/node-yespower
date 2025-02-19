@@ -1,18 +1,18 @@
 {
     "targets": [
         {
-            "target_name": "bellcoin_yespower",
+            "target_name": "yespower",
             "sources": [
-                "bellcoin_yespower.cc",
-                "yespower-1.0.0/yespower.h",
-                "yespower-1.0.0/yespower-opt.c",
-                "yespower-1.0.0/sha256.c",
+                "yespower.cc",
+                "yespower/sha256.c",
+                "yespower/yespower.c",
+                "yespower/yespower-opt.c",
             ],
             "include_dirs": [
                 "<!(node -e \"require('nan')\")"
             ],
             "cflags_cc": [
-                "-std=c++0x"
+                "-std=c++17 -march=native"
             ],
         }
     ]

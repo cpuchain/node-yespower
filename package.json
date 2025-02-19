@@ -1,17 +1,19 @@
 {
-  "name": "bellcoin-yespower",
-  "version": "1.0.0",
-  "description": "Bellcoin yespower-1.0",
-  "main": "bellcoin_yespower",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "node-gyp rebuild"
-  },
-  "author": "zenywallet",
-  "license": "MIT",
-  "gypfile": true,
-  "dependencies": {
-    "bindings": "*",
-    "nan": "^2.7.0"
-  }
+    "name": "yespower",
+    "version": "1.0.0",
+    "description": "Node.js bindings of the Yespower hashing algorithm",
+    "main": "index.js",
+    "types": "index.d.ts",
+    "scripts": {
+        "bench": "node scripts/bench.js",
+        "test": "node --test test/index.js",
+        "install": "node-gyp rebuild"
+    },
+    "author": "Alexander Peslyak",
+    "license": "MIT",
+    "gypfile": true,
+    "dependencies": {
+        "bindings": "*",
+        "nan": "^2.7.0"
+    }
 }

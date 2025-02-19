@@ -123,13 +123,9 @@ extern int yespower(yespower_local_t *local,
 extern int yespower_tls(const uint8_t *src, size_t srclen,
     const yespower_params_t *params, yespower_binary_t *dst);
 
-
-extern void yespower_hash(const char *input, char *output);
-
-
 #ifdef __cplusplus
 }
 #endif
 
-
 #endif /* !_YESPOWER_H_ */
+void yespower_hash(const char* input, uint32_t inputLen, char* pers, uint32_t persLen, char* output);

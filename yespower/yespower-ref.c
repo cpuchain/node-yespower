@@ -1,6 +1,6 @@
 /*-
  * Copyright 2009 Colin Percival
- * Copyright 2013-2018 Alexander Peslyak
+ * Copyright 2013-2019 Alexander Peslyak
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,9 @@
  * yespower-opt.c.
  */
 
+#ifdef __GNUC__
 #warning "This reference implementation is deliberately mostly not optimized. Use yespower-opt.c instead unless you're testing (against) the reference implementation on purpose."
+#endif
 
 #include <errno.h>
 #include <stdint.h>
@@ -467,6 +469,8 @@ int yespower(yespower_local_t *local,
 	uint32_t *B, *V, *X, *S;
 	pwxform_ctx_t ctx;
 	uint32_t sha256[8];
+
+	memset(dst, 0xff, sizeof(*dst));
 
 	/* Sanity-check parameters */
 	if ((version != YESPOWER_0_5 && version != YESPOWER_1_0) ||

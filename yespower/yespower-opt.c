@@ -1,6 +1,6 @@
 /*-
  * Copyright 2009 Colin Percival
- * Copyright 2012-2018 Alexander Peslyak
+ * Copyright 2012-2019 Alexander Peslyak
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,6 +49,7 @@
  * no slowdown from the prefixes is generally observed on AMD CPUs supporting
  * XOP, some slowdown is sometimes observed on Intel CPUs with AVX.
  */
+#ifdef __GNUC__
 #ifdef __XOP__
 #warning "Note: XOP is enabled.  That's great."
 #elif defined(__AVX__)
@@ -59,6 +60,7 @@
 #warning "SSE2 not enabled.  Expect poor performance."
 #else
 #warning "Note: building generic code for non-x86.  That's OK."
+#endif
 #endif
 
 /*
@@ -531,6 +533,11 @@ static volatile uint64_t Smask2var = Smask2;
 #undef MAYBE_MEMORY_BARRIER
 #define MAYBE_MEMORY_BARRIER \
 	__asm__("" : : : "memory");
+#ifdef __ILP32__ /* x32 */
+#define REGISTER_PREFIX "e"
+#else
+#define REGISTER_PREFIX "r"
+#endif
 #define PWXFORM_SIMD(X) { \
 	__m128i H; \
 	__asm__( \
@@ -540,8 +547,8 @@ static volatile uint64_t Smask2var = Smask2;
 	    "pmuludq %1, %0\n\t" \
 	    "movl %%eax, %%ecx\n\t" \
 	    "shrq $0x20, %%rax\n\t" \
-	    "paddq (%3,%%rcx), %0\n\t" \
-	    "pxor (%4,%%rax), %0\n\t" \
+	    "paddq (%3,%%" REGISTER_PREFIX "cx), %0\n\t" \
+	    "pxor (%4,%%" REGISTER_PREFIX "ax), %0\n\t" \
 	    : "+x" (X), "=x" (H) \
 	    : "d" (Smask2), "S" (S0), "D" (S1) \
 	    : "cc", "ax", "cx"); \
@@ -949,12 +956,10 @@ static void smix2(uint8_t *B, size_t r, uint32_t N, uint32_t Nloop,
 		} while (Nloop -= 2);
 #if _YESPOWER_OPT_C_PASS_ == 1
 	} else {
-		do {
-			const salsa20_blk_t * V_j = &V[j * s];
-			j = blockmix_xor(X, V_j, Y, r, ctx) & (N - 1);
-			V_j = &V[j * s];
-			j = blockmix_xor(Y, V_j, X, r, ctx) & (N - 1);
-		} while (Nloop -= 2);
+		const salsa20_blk_t * V_j = &V[j * s];
+		j = blockmix_xor(X, V_j, Y, r, ctx) & (N - 1);
+		V_j = &V[j * s];
+		blockmix_xor(Y, V_j, X, r, ctx);
 	}
 #endif
 
@@ -1046,7 +1051,7 @@ int yespower(yespower_local_t *local,
 	    (N & (N - 1)) != 0 ||
 	    (!pers && perslen)) {
 		errno = EINVAL;
-		return -1;
+		goto fail;
 	}
 
 	/* Allocate memory */
@@ -1064,9 +1069,9 @@ int yespower(yespower_local_t *local,
 	need = B_size + V_size + XY_size + ctx.Sbytes;
 	if (local->aligned_size < need) {
 		if (free_region(local))
-			return -1;
+			goto fail;
 		if (!alloc_region(local, need))
-			return -1;
+			goto fail;
 	}
 	B = (uint8_t *)local->aligned;
 	V = (salsa20_blk_t *)((uint8_t *)B + B_size);
@@ -1110,6 +1115,10 @@ int yespower(yespower_local_t *local,
 
 	/* Success! */
 	return 0;
+
+fail:
+	memset(dst, 0xff, sizeof(*dst));
+	return -1;
 }
 
 /**
@@ -1122,12 +1131,16 @@ int yespower(yespower_local_t *local,
 int yespower_tls(const uint8_t *src, size_t srclen,
     const yespower_params_t *params, yespower_binary_t *dst)
 {
+#ifdef _MSC_VER
+	static __declspec(thread) int initialized = 0;
+	static __declspec(thread) yespower_local_t local;
+#else
 	static __thread int initialized = 0;
 	static __thread yespower_local_t local;
+#endif
 
 	if (!initialized) {
-		if (yespower_init_local(&local))
-			return -1;
+		init_region(&local);
 		initialized = 1;
 	}
 
@@ -1143,31 +1156,5 @@ int yespower_init_local(yespower_local_t *local)
 int yespower_free_local(yespower_local_t *local)
 {
 	return free_region(local);
-}
-
-
-void yespower_hash(const char *input, char *output)
-{
-	//YESPOWER_1_0, 2048, 32, NULL
-	yespower_params_t params = {
-		.version = YESPOWER_1_0,
-		.N = 2048,
-		.r = 32,
-		.pers = NULL,
-		.perslen = 0
-	};
-	//uint8_t src[80];
-	yespower_binary_t dst;
-	size_t i;
-
-	if (yespower_tls((uint8_t *)input, 80, &params, &dst)) {
-		puts("FAILED");
-		return;
-	}
-
-	for (i = 0; i < sizeof(dst); i++) {
-		output[i] = dst.uc[i];
-		//printf("%02x%c", dst.uc[i], i < sizeof(dst) - 1 ? ' ' : '\n');
-	}
 }
 #endif
