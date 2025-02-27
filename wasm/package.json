@@ -1,0 +1,40 @@
+{
+    "name": "yespower-wasm",
+    "version": "1.0.1",
+    "description": "WebAssembly module for Yespower",
+    "license": "MIT",
+    "author": "CPUchain",
+    "main": "lib/index.js",
+    "browser": "lib/yespower.umd.js",
+    "types": "lib/index.d.ts",
+    "keywords": ["yespower", "proof-of-work", "hashing", "wasm", "webassembly"],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/cpuchain/yespower-js.git"
+    },
+    "scripts": {
+        "lint": "eslint src/**/*.ts scripts/**/*.ts test/*.ts --ignore-pattern src/*.d.ts",
+        "build:wasm-bundle": "ts-node scripts/bundle.ts",
+        "build:wasm-beautify": "js-beautify src/yespower_wasm.js -o src/yespower_wasm.js",
+        "build:wasm": "emcc ../yespower-c/yespower-opt.c ../yespower-c/yespower.c ../yespower-c/sha256.c -O3 -s WASM=1 -s MODULARIZE=1 -s EXPORTED_FUNCTIONS=\"['_yespower_wasm', '_malloc', '_free']\" -s EXPORTED_RUNTIME_METHODS=\"['ccall', 'cwrap']\" -s EXPORT_NAME=\"yespower_wasm\" -o src/yespower_wasm.js --emit-tsd yespower_wasm.js.d.ts && yarn build:wasm-beautify && yarn build:wasm-bundle",
+        "build:types": "tsc --declaration --emitDeclarationOnly -p tsconfig.build.json",
+        "build": "yarn build:types && webpack",
+        "bench": "node scripts/bench.js",
+        "test": "node --test --require ts-node/register ./test/index.ts"
+    },
+    "devDependencies": {
+        "@cpuchain/eslint": "^1.0.4",
+        "@types/node": "^22.13.5",
+        "esbuild-loader": "^4.3.0",
+        "js-beautify": "^1.15.3",
+        "node-polyfill-webpack-plugin": "^4.1.0",
+        "ts-node": "^10.9.2",
+        "tsc": "^2.0.4",
+        "typescript": "^5.7.3",
+        "webpack": "^5.98.0",
+        "webpack-cli": "^6.0.1"
+    },
+    "resolutions": {
+        "fast-glob": ">=3.3.3"
+    }
+}

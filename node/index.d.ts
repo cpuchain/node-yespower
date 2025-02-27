@@ -1,0 +1,1 @@
+export function yespower(input: Buffer, pers?: string): Buffer;
